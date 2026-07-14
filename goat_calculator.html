@@ -274,6 +274,79 @@
   .screen { display: none; }
   .screen.active { display: block; }
   .section-title { font-size: 0.95rem; font-weight: 700; color: var(--muted); margin: 0 0 0.9rem; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .case-block { margin-bottom: 1.6rem; }
+  .case-block h3 { margin: 0 0 0.3rem; font-size: 1.05rem; }
+  .case-block p.hint { margin: 0 0 1rem; color: var(--muted); font-size: 0.85rem; }
+  input[type="text"] {
+    font-size: 0.95rem;
+    padding: 0.65rem 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    font-family: inherit;
+    flex: 1 1 240px;
+    min-width: 0;
+  }
+  input[type="text"]::placeholder { color: #7a7891; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
+  .chip {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .chip:hover { border-color: var(--accent3); background: rgba(36,224,176,0.12); }
+
+  .verdict-card {
+    background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.3rem 1.5rem;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transform: translateY(10px);
+    animation: cardIn 0.4s ease forwards;
+  }
+  .verdict-head { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+  .verdict-verdict {
+    font-size: 1rem;
+    line-height: 1.6;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    margin: 0.9rem 0;
+  }
+  .verdict-verdict.reject { background: rgba(255,77,126,0.1); border: 1px solid rgba(255,77,126,0.3); color: #ffd7e2; }
+  .verdict-verdict.accept { background: rgba(36,224,176,0.1); border: 1px solid rgba(36,224,176,0.32); color: #c9fbe9; }
+  .verdict-verdict strong { color: #fff; }
+
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 620px) { .compare-grid { grid-template-columns: 1fr; } }
+  .compare-col h4 { margin: 0 0 0.6rem; font-size: 1rem; }
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    margin: 0.3rem 0;
+    padding: 0.3rem 0.5rem;
+    border-radius: 8px;
+  }
+  .compare-row.win { background: rgba(36,224,176,0.1); }
+  .compare-row .clabel { color: var(--muted); }
+  .compare-row .cval { font-weight: 700; font-variant-numeric: tabular-nums; }
+  select.small { min-width: 160px; }
 </style>
 </head>
 <body>
@@ -291,6 +364,7 @@
   <nav class="tabs">
     <button id="tabBySport" class="active">By Sport - Top 25</button>
     <button id="tabAllTime">All-Time Top 10</button>
+    <button id="tabCase">Make Your Case</button>
   </nav>
 
   <div id="screenBySport" class="screen active">
@@ -317,6 +391,32 @@
       </p>
     </div>
     <div class="list" id="resultsAllTime"></div>
+  </div>
+
+  <div id="screenCase" class="screen">
+    <div class="panel case-block">
+      <h3>Think two players are ranked wrong?</h3>
+      <p class="hint">Pick a sport and two players. The equation breaks down exactly which categories decide it.</p>
+      <div class="controls">
+        <select id="caseSportSelect" class="small"></select>
+        <select id="casePlayerA" class="small"></select>
+        <span style="color:var(--muted); font-weight:700;">vs</span>
+        <select id="casePlayerB" class="small"></select>
+        <button class="action" id="compareBtn">Compare</button>
+      </div>
+    </div>
+    <div id="compareResult"></div>
+
+    <div class="panel case-block">
+      <h3>Think someone deserves a spot in the Top 25?</h3>
+      <p class="hint">Type any player's name from the dataset (any sport) and make your case. The equation will tell you exactly where they land and why - including if they're right.</p>
+      <div class="controls">
+        <input type="text" id="caseInput" placeholder="e.g. Allen Iverson, Gerd Muller, Mariano Rivera...">
+        <button class="action" id="caseBtn">Make My Case</button>
+      </div>
+      <div id="caseSuggestions"></div>
+    </div>
+    <div id="caseResult"></div>
   </div>
 
   <footer class="foot">
@@ -615,6 +715,91 @@ const SPORTS = {
 const SPORT_KEYS = Object.keys(SPORTS);
 
 // ---------------------------------------------------------------------------
+// "On the bubble" - commonly argued players who did NOT make each sport's
+// top 25 as originally seeded. They're scored with the exact same equation
+// and folded into the same candidate pool as everyone else, so if the math
+// says one of them actually belongs in the top 25, it will show up there -
+// nothing here is hard-coded to lose.
+// ---------------------------------------------------------------------------
+
+const BUBBLE = {
+  basketball: [
+    ["Allen Iverson", 86, 78, 20, 60, 68, 82, "MVP and scoring champion despite a 6-foot frame; iconic cultural impact, but zero titles."],
+    ["Patrick Ewing", 78, 78, 20, 55, 82, 60, "11 All-Star-caliber seasons for the Knicks, but never won a championship."],
+    ["Dwyane Wade", 85, 78, 68, 55, 75, 72, "3 titles and a Finals MVP, mostly as Miami's best player in his prime."],
+    ["Kevin Garnett", 82, 80, 62, 68, 85, 68, "MVP, Defensive Player of the Year, and a title, though only 1 championship in 21 seasons."],
+    ["Dominique Wilkins", 82, 78, 15, 45, 75, 60, "One of the most electrifying scorers ever, but never advanced far in the playoffs."],
+    ["Steve Nash", 78, 75, 15, 68, 78, 65, "Back-to-back MVPs running the 'Seven Seconds or Less' Suns, but never reached a Finals."],
+    ["Chris Paul", 75, 78, 10, 55, 82, 60, "One of the greatest pure point guards ever statistically, but no championship or Finals trip in his prime."],
+    ["Kevin McHale", 76, 72, 78, 45, 78, 55, "3 titles as a key Celtics role player, but never the team's clear best player."],
+  ],
+  soccer: [
+    ["Gerd Muller", 92, 88, 82, 75, 65, 70, "One of the greatest goal-scoring records ever; World Cup, Euro, and 3 European Cup titles."],
+    ["Bobby Charlton", 82, 75, 78, 65, 78, 78, "1966 World Cup and 1968 European Cup winner with Manchester United and England."],
+    ["Roberto Carlos", 80, 62, 85, 55, 82, 70, "Pioneered the attacking fullback role; 4 Champions League titles and a World Cup."],
+    ["Andrea Pirlo", 78, 65, 82, 60, 82, 72, "World Cup winner and one of the most influential deep-lying playmakers ever."],
+    ["Sergio Ramos", 78, 55, 88, 55, 88, 68, "5 Champions League titles and 2 Euros as a defensive leader, though never a Ballon d'Or contender."],
+    ["Robert Lewandowski", 88, 90, 65, 55, 78, 65, "One of the most efficient goal-scorers ever, but never won a Ballon d'Or or a World Cup with Poland."],
+  ],
+  american_football: [
+    ["Terrell Owens", 85, 88, 15, 50, 78, 68, "2nd all-time in receiving yards at retirement, but never won a Super Bowl."],
+    ["Bo Jackson", 90, 55, 5, 40, 30, 75, "A mythic athletic peak cut short by a hip injury after just a few seasons."],
+    ["Junior Seau", 82, 68, 10, 50, 85, 65, "One of the most respected linebackers of his era, but never won a Super Bowl."],
+    ["Troy Polamalu", 85, 65, 65, 60, 68, 62, "2 Super Bowls and a Defensive Player of the Year award for a dominant Steelers defense."],
+    ["Marshall Faulk", 85, 82, 55, 68, 72, 68, "MVP as a running back - a rare feat - and a key piece of 'The Greatest Show on Turf'."],
+    ["Warren Moon", 75, 78, 10, 45, 88, 62, "Massive combined CFL/NFL passing totals, but never won a championship at either level."],
+  ],
+  baseball: [
+    ["Pete Rose", 78, 88, 78, 62, 90, 55, "All-time hits leader and 3 World Series titles, but a lifetime ban for gambling tempers his legacy."],
+    ["Frank Robinson", 82, 85, 68, 72, 85, 68, "Only player to win MVP in both leagues, plus a Triple Crown season."],
+    ["Christy Mathewson", 85, 82, 62, 55, 80, 65, "373 career wins and a dominant dead-ball-era ace."],
+    ["Josh Gibson", 90, 78, 60, 55, 60, 78, "Legendary Negro Leagues power numbers, though his official MLB record remains limited by segregation-era exclusion."],
+    ["Mariano Rivera", 88, 70, 90, 58, 85, 72, "All-time saves leader and 5 World Series titles as the greatest closer ever."],
+    ["Shohei Ohtani", 92, 80, 50, 78, 45, 85, "Unprecedented two-way dominance, though still building a longer career track record."],
+  ],
+  hockey: [
+    ["Henri Richard", 75, 62, 98, 45, 78, 60, "11 Stanley Cups - the most of any player in NHL history - though rarely the team's best player."],
+    ["Marcel Dionne", 80, 85, 5, 55, 82, 55, "One of the greatest scorers ever, but never won a Stanley Cup or even came close."],
+    ["Chris Chelios", 75, 65, 68, 60, 92, 58, "3 Stanley Cups and 3 Norris Trophies across a remarkably long career."],
+    ["Patrick Kane", 82, 82, 72, 62, 75, 65, "3 Stanley Cups, a Conn Smythe, and an MVP award for one of the best pure scorers of his era."],
+    ["Jarome Iginla", 78, 75, 10, 55, 80, 55, "One of the most consistent power forwards of his generation, but never won a Cup."],
+    ["Auston Matthews", 85, 78, 10, 62, 50, 60, "MVP-caliber goal scorer, but yet to reach a Stanley Cup Final."],
+  ],
+  tennis_men: [
+    ["Jim Courier", 75, 50, 55, 48, 55, 52, "4 Grand Slam titles and briefly world No. 1 in the early 1990s."],
+    ["Gustavo Kuerten", 78, 48, 55, 48, 55, 62, "3 French Open titles and a beloved, flamboyant playing style."],
+    ["Lleyton Hewitt", 76, 45, 52, 50, 62, 55, "Youngest-ever world No. 1, but just 2 Grand Slam titles."],
+    ["Marat Safin", 80, 42, 50, 45, 50, 58, "Enormous natural talent and 2 majors, but famously inconsistent."],
+    ["Goran Ivanisevic", 75, 35, 45, 40, 55, 55, "Won a single, epic Wimbledon title in 2001 as a wildcard."],
+    ["Andy Roddick", 78, 45, 48, 48, 62, 58, "1 major and one of the greatest serves in tennis history."],
+  ],
+  tennis_women: [
+    ["Li Na", 72, 40, 45, 42, 55, 75, "First Asian Grand Slam singles champion, with huge impact growing tennis across Asia."],
+    ["Petra Kvitova", 78, 42, 48, 42, 60, 55, "2 Wimbledon titles built on one of the best lefty games of her generation."],
+    ["Victoria Azarenka", 78, 40, 48, 55, 62, 55, "2 Australian Open titles and an extended run at world No. 1."],
+    ["Caroline Wozniacki", 65, 35, 42, 45, 68, 55, "Long reign at world No. 1 before finally winning a major late in her career."],
+    ["Angelique Kerber", 78, 42, 50, 48, 62, 58, "3 Grand Slam titles across hard court and grass."],
+    ["Simona Halep", 78, 40, 48, 48, 58, 55, "2 Grand Slam titles and extended time at world No. 1."],
+  ],
+  boxing: [
+    ["Jack Dempsey", 90, 68, 65, 55, 55, 82, "1920s heavyweight champion who drew the sport's first million-dollar gates."],
+    ["Ezzard Charles", 82, 75, 62, 55, 70, 58, "One of the most avoided fighters ever, having beaten several other all-time greats."],
+    ["Ricardo Lopez", 82, 78, 60, 50, 68, 48, "Retired 51-0-1, among the greatest small-weight fighters ever, if little-known to casual fans."],
+    ["Naseem Hamed", 85, 68, 55, 50, 55, 68, "Electrifying, undefeated-for-years featherweight champion known for his showmanship."],
+    ["Roy Jones Jr.", 90, 72, 68, 58, 60, 65, "Won titles from middleweight to heavyweight at his athletic peak."],
+    ["Wladimir Klitschko", 82, 80, 72, 58, 82, 62, "Held heavyweight titles for nearly a decade during a long, dominant title reign."],
+  ],
+  golf: [
+    ["Gene Sarazen", 82, 62, 68, 48, 70, 72, "7 majors and inventor of the modern sand wedge."],
+    ["Johnny Miller", 85, 55, 45, 45, 55, 55, "One of the most dominant short peaks in golf history, but only 2 majors."],
+    ["Bobby Locke", 78, 62, 55, 42, 65, 55, "4 Open Championship titles built on a legendary putting stroke."],
+    ["Padraig Harrington", 75, 52, 48, 42, 62, 50, "3 majors including back-to-back Open Championships."],
+    ["Justin Thomas", 78, 55, 48, 55, 45, 48, "2 majors and multiple Player of the Year-caliber seasons."],
+    ["Brooks Koepka", 85, 55, 55, 55, 45, 55, "Built a reputation as the game's best 'big-moment' major championship player."],
+  ],
+};
+
+// ---------------------------------------------------------------------------
 // Scoring
 // ---------------------------------------------------------------------------
 
@@ -625,16 +810,17 @@ function buildPlayer(sportKey, arr) {
   return { name, sportKey, sportName: SPORTS[sportKey].name, scores, note, total };
 }
 
+function getFullPool(sportKey) {
+  return SPORTS[sportKey].players.concat(BUBBLE[sportKey] || []).map(arr => buildPlayer(sportKey, arr));
+}
+
 function rankPlayers(sportKey, count) {
-  const players = SPORTS[sportKey].players.map(p => buildPlayer(sportKey, p));
-  return players.sort((a, b) => b.total - a.total).slice(0, count);
+  return getFullPool(sportKey).sort((a, b) => b.total - a.total).slice(0, count);
 }
 
 function rankAllTime(count) {
   let pool = [];
-  SPORT_KEYS.forEach(key => {
-    pool = pool.concat(SPORTS[key].players.map(p => buildPlayer(key, p)));
-  });
+  SPORT_KEYS.forEach(key => { pool = pool.concat(getFullPool(key)); });
   return pool.sort((a, b) => b.total - a.total).slice(0, count);
 }
 
@@ -803,36 +989,230 @@ function downloadText(text, filename) {
 }
 
 function initTabs() {
-  const tabBySport = document.getElementById("tabBySport");
-  const tabAllTime = document.getElementById("tabAllTime");
-  const screenBySport = document.getElementById("screenBySport");
-  const screenAllTime = document.getElementById("screenAllTime");
+  const tabs = {
+    tabBySport: document.getElementById("screenBySport"),
+    tabAllTime: document.getElementById("screenAllTime"),
+    tabCase: document.getElementById("screenCase"),
+  };
+  Object.keys(tabs).forEach(id => {
+    document.getElementById(id).addEventListener("click", () => {
+      Object.keys(tabs).forEach(otherId => {
+        document.getElementById(otherId).classList.toggle("active", otherId === id);
+        tabs[otherId].classList.toggle("active", otherId === id);
+      });
+      if (id === "tabAllTime" && !tabs.tabAllTime.dataset.loaded) {
+        renderResultsAllTime();
+        tabs.tabAllTime.dataset.loaded = "1";
+      }
+    });
+  });
+}
 
-  tabBySport.addEventListener("click", () => {
-    tabBySport.classList.add("active");
-    tabAllTime.classList.remove("active");
-    screenBySport.classList.add("active");
-    screenAllTime.classList.remove("active");
-  });
-  tabAllTime.addEventListener("click", () => {
-    tabAllTime.classList.add("active");
-    tabBySport.classList.remove("active");
-    screenAllTime.classList.add("active");
-    screenBySport.classList.remove("active");
-    if (!screenAllTime.dataset.loaded) {
-      renderResultsAllTime();
-      screenAllTime.dataset.loaded = "1";
+// ---------------------------------------------------------------------------
+// Make Your Case: head-to-head comparisons + fuzzy player lookup
+// ---------------------------------------------------------------------------
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
     }
+  }
+  return dp[m][n];
+}
+
+function allCandidates() {
+  let pool = [];
+  SPORT_KEYS.forEach(key => { pool = pool.concat(getFullPool(key)); });
+  return pool;
+}
+
+function findPlayerGlobal(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return { exact: null, suggestions: [] };
+  const pool = allCandidates();
+
+  let matches = pool.filter(p => p.name.toLowerCase() === q);
+  if (matches.length === 1) return { exact: matches[0], suggestions: [] };
+
+  matches = pool.filter(p => p.name.toLowerCase().includes(q));
+  if (matches.length === 1) return { exact: matches[0], suggestions: [] };
+  if (matches.length > 1) return { exact: null, suggestions: matches.slice(0, 5) };
+
+  const scored = pool
+    .map(p => ({ p, d: levenshtein(q, p.name.toLowerCase()) }))
+    .sort((a, b) => a.d - b.d);
+  const close = scored.filter(s => s.d <= Math.max(2, Math.floor(q.length * 0.4)));
+  if (close.length === 1) return { exact: close[0].p, suggestions: [] };
+  if (close.length > 1) return { exact: null, suggestions: close.slice(0, 5).map(s => s.p) };
+  return { exact: null, suggestions: scored.slice(0, 5).map(s => s.p) };
+}
+
+function populateCasePlayerSelects() {
+  const sportKey = document.getElementById("caseSportSelect").value;
+  const pool = getFullPool(sportKey).sort((a, b) => a.name.localeCompare(b.name));
+  ["casePlayerA", "casePlayerB"].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    pool.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.name;
+      opt.textContent = p.name;
+      sel.appendChild(opt);
+    });
   });
+  if (pool.length > 1) {
+    document.getElementById("casePlayerA").selectedIndex = 0;
+    document.getElementById("casePlayerB").selectedIndex = 1;
+  }
+}
+
+function renderComparison() {
+  const sportKey = document.getElementById("caseSportSelect").value;
+  const nameA = document.getElementById("casePlayerA").value;
+  const nameB = document.getElementById("casePlayerB").value;
+  const pool = getFullPool(sportKey).sort((a, b) => b.total - a.total);
+  const a = pool.find(p => p.name === nameA);
+  const b = pool.find(p => p.name === nameB);
+  const container = document.getElementById("compareResult");
+
+  if (!a || !b || a.name === b.name) {
+    container.innerHTML = `<div class="verdict-card"><p>Pick two different players to compare.</p></div>`;
+    return;
+  }
+
+  const rankA = pool.indexOf(a) + 1;
+  const rankB = pool.indexOf(b) + 1;
+
+  const rows = Object.keys(WEIGHTS).map(k => {
+    const va = a.scores[k], vb = b.scores[k];
+    const aWins = va > vb, bWins = vb > va;
+    return {
+      k,
+      a: `<div class="compare-row ${aWins ? 'win' : ''}"><span class="clabel">${LABELS[k]}</span><span class="cval">${va}</span></div>`,
+      b: `<div class="compare-row ${bWins ? 'win' : ''}"><span class="clabel">${LABELS[k]}</span><span class="cval">${vb}</span></div>`,
+      diff: (va - vb) * WEIGHTS[k],
+    };
+  });
+
+  const winner = a.total >= b.total ? a : b;
+  const loser = a.total >= b.total ? b : a;
+  const margin = Math.abs(a.total - b.total);
+  const biggestFor = rows.slice().sort((x, y) => Math.abs(y.diff) - Math.abs(x.diff))[0];
+
+  container.innerHTML = `
+    <div class="verdict-card">
+      <div class="verdict-head">
+        <strong>${a.name}</strong> (#${rankA} in ${a.sportName}, ${a.total.toFixed(2)}) &nbsp;vs&nbsp;
+        <strong>${b.name}</strong> (#${rankB} in ${b.sportName}, ${b.total.toFixed(2)})
+      </div>
+      <div class="compare-grid">
+        <div class="compare-col"><h4>${a.name}</h4>${rows.map(r => r.a).join("")}</div>
+        <div class="compare-col"><h4>${b.name}</h4>${rows.map(r => r.b).join("")}</div>
+      </div>
+      <div class="verdict-verdict ${margin < 0.5 ? '' : 'accept'}">
+        <strong>${winner.name}</strong> ranks higher by <strong>${margin.toFixed(2)} points</strong> (#${pool.indexOf(winner) + 1} vs #${pool.indexOf(loser) + 1}).
+        The single biggest swing factor is <strong>${LABELS[biggestFor.k]}</strong>
+        (${biggestFor.diff > 0 ? a.name : b.name} leads there, worth ${Math.abs(biggestFor.diff).toFixed(2)} weighted points) -
+        ${Math.abs(biggestFor.diff) >= margin
+          ? `that alone is larger than the ${margin.toFixed(2)}-point margin, so it's effectively the whole argument.`
+          : `it accounts for the largest single share of the ${margin.toFixed(2)}-point margin, with the rest split across the other categories.`}
+      </div>
+    </div>`;
+}
+
+function renderCaseVerdict(player) {
+  const pool = getFullPool(player.sportKey).sort((a, b) => b.total - a.total);
+  const rank = pool.findIndex(p => p.name === player.name) + 1;
+  const inTop25 = rank <= 25;
+  const container = document.getElementById("caseResult");
+  document.getElementById("caseSuggestions").innerHTML = "";
+
+  if (inTop25) {
+    container.innerHTML = `
+      <div class="verdict-card">
+        <div class="verdict-head">
+          <strong>${player.name}</strong> &mdash; ${player.sportName} &mdash; GOAT Score ${player.total.toFixed(2)} / 100
+        </div>
+        <div class="verdict-verdict accept">
+          Case already made: <strong>${player.name}</strong> is in the Top 25 at <strong>#${rank}</strong>.
+        </div>
+        ${movePathHtml(pool.slice(0, 25), rank - 1)}
+        <div class="note"><strong>Why they rank where they do:</strong> ${player.note}</div>
+      </div>`;
+    return;
+  }
+
+  const cutoff = pool[24];
+  const gap = cutoff.total - player.total;
+  const deficits = Object.keys(WEIGHTS)
+    .map(k => ({ k, diff: (cutoff.scores[k] - player.scores[k]) * WEIGHTS[k], playerRaw: player.scores[k], cutoffRaw: cutoff.scores[k] }))
+    .sort((x, y) => y.diff - x.diff);
+  const top2 = deficits.slice(0, 2).filter(d => d.diff > 0);
+
+  const reasonText = top2.length
+    ? top2.map(d => `<strong>${LABELS[d.k]}</strong> (${d.playerRaw}/100 vs ${d.cutoffRaw}/100 for the cutoff player)`).join(" and ")
+    : "a fairly even spread across every category";
+
+  container.innerHTML = `
+    <div class="verdict-card">
+      <div class="verdict-head">
+        <strong>${player.name}</strong> &mdash; ${player.sportName} &mdash; GOAT Score ${player.total.toFixed(2)} / 100
+      </div>
+      <div class="verdict-verdict reject">
+        Case denied. <strong>${player.name}</strong> ranks <strong>#${rank}</strong> of ${pool.length} tracked ${player.sportName} players -
+        <strong>${gap.toFixed(2)} points</strong> short of <strong>${cutoff.name}</strong>, who holds the #25 spot at ${cutoff.total.toFixed(2)}.
+        The biggest reasons: ${reasonText}.
+      </div>
+      <div class="note"><strong>Their actual case:</strong> ${player.note}</div>
+    </div>`;
+}
+
+function handleMakeCase() {
+  const input = document.getElementById("caseInput").value;
+  const { exact, suggestions } = findPlayerGlobal(input);
+  const suggBox = document.getElementById("caseSuggestions");
+  const resultBox = document.getElementById("caseResult");
+
+  if (exact) {
+    renderCaseVerdict(exact);
+    return;
+  }
+
+  resultBox.innerHTML = "";
+  if (suggestions.length) {
+    suggBox.innerHTML = `<div class="chips">${suggestions
+      .map(p => `<button type="button" class="chip" data-name="${p.name.replace(/"/g, '&quot;')}">${p.name} <span style="opacity:0.6">(${p.sportName})</span></button>`)
+      .join("")}</div>`;
+    suggBox.querySelectorAll(".chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const player = allCandidates().find(p => p.name === btn.dataset.name);
+        if (player) renderCaseVerdict(player);
+      });
+    });
+  } else {
+    suggBox.innerHTML = `<p style="color:var(--muted); font-size:0.85rem; margin-top:0.8rem;">No data on record for "${input}" in any tracked sport.</p>`;
+  }
 }
 
 function init() {
   const select = document.getElementById("sportSelect");
+  const caseSportSelect = document.getElementById("caseSportSelect");
   SPORT_KEYS.forEach(key => {
-    const opt = document.createElement("option");
-    opt.value = key;
-    opt.textContent = SPORTS[key].name;
-    select.appendChild(opt);
+    [select, caseSportSelect].forEach(sel => {
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = SPORTS[key].name;
+      sel.appendChild(opt);
+    });
   });
   document.getElementById("equationText").textContent = equationText();
 
@@ -847,6 +1227,15 @@ function init() {
     const list = rankAllTime(10);
     downloadText(reportText(list, "All-Time Top 10 (Every Sport)", true), `all_sports_top10_goat.txt`);
   });
+
+  caseSportSelect.addEventListener("change", populateCasePlayerSelects);
+  document.getElementById("compareBtn").addEventListener("click", renderComparison);
+  document.getElementById("caseBtn").addEventListener("click", handleMakeCase);
+  document.getElementById("caseInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") handleMakeCase();
+  });
+
+  populateCasePlayerSelects();
 
   initTabs();
   renderResultsBySport(select.value);
