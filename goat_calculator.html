@@ -6,147 +6,324 @@
 <title>GOAT Calculator</title>
 <style>
   :root {
-    color-scheme: light dark;
-    --bg: #f5f5f7;
-    --panel: #ffffff;
-    --text: #1b1b1f;
-    --muted: #5b5b63;
-    --border: #dcdce0;
-    --accent: #a6192e;
-    --accent-bg: #fbe9eb;
-    --bar: #a6192e;
-    --track: #ececef;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #16161a;
-      --panel: #201f24;
-      --text: #eaeaef;
-      --muted: #a3a3ad;
-      --border: #35343b;
-      --accent: #ff5f72;
-      --accent-bg: #3a1e22;
-      --bar: #ff5f72;
-      --track: #35343b;
-    }
+    --bg-a: #0b0b14;
+    --bg-b: #14102a;
+    --panel: rgba(255,255,255,0.05);
+    --panel-solid: #17162a;
+    --text: #f2f1fa;
+    --muted: #9c9ab3;
+    --border: rgba(255,255,255,0.09);
+    --accent: #ff4d7e;
+    --accent2: #7c5cff;
+    --accent3: #24e0b0;
+    --track: rgba(255,255,255,0.08);
+    --gold: #ffd166;
+    --silver: #d9d9e3;
+    --bronze: #e0956b;
+    --shadow: 0 20px 45px rgba(0,0,0,0.45);
   }
   * { box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
     margin: 0;
-    padding: 2rem 1rem 4rem;
-    background: var(--bg);
+    padding: 0 0 5rem;
+    background:
+      radial-gradient(1200px 700px at 12% -10%, rgba(124,92,255,0.35), transparent 60%),
+      radial-gradient(900px 600px at 110% 10%, rgba(255,77,126,0.28), transparent 55%),
+      radial-gradient(800px 500px at 50% 120%, rgba(36,224,176,0.18), transparent 60%),
+      linear-gradient(180deg, var(--bg-a), var(--bg-b));
+    background-attachment: fixed;
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     line-height: 1.5;
+    min-height: 100vh;
+    overflow-x: hidden;
   }
-  .wrap { max-width: 780px; margin: 0 auto; }
-  h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
-  .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; }
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.35;
+    z-index: 0;
+    pointer-events: none;
+    animation: drift 22s ease-in-out infinite alternate;
+  }
+  .blob1 { width: 420px; height: 420px; background: var(--accent2); top: -120px; left: -100px; }
+  .blob2 { width: 380px; height: 380px; background: var(--accent); top: 30%; right: -140px; animation-delay: -6s; }
+  .blob3 { width: 340px; height: 340px; background: var(--accent3); bottom: -140px; left: 30%; animation-delay: -12s; }
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(40px, -30px) scale(1.12); }
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 2.5rem 1.25rem 0; }
+
+  header.hero { text-align: center; margin-bottom: 1.75rem; }
+  .badge-eyebrow {
+    display: inline-block;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent3);
+    background: rgba(36,224,176,0.12);
+    border: 1px solid rgba(36,224,176,0.35);
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin: 0 0 0.4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(90deg, #ffffff 0%, #d9d4ff 45%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle { color: var(--muted); margin: 0 auto; max-width: 46ch; font-size: 1rem; }
+
+  nav.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    margin: 1.75rem 0 1.75rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 0.35rem;
+    border-radius: 999px;
+    backdrop-filter: blur(16px);
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  nav.tabs button {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 0.6rem 1.3rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  nav.tabs button.active {
+    color: #14102a;
+    background: linear-gradient(90deg, var(--accent3), #8ef0d3);
+    box-shadow: 0 6px 18px rgba(36,224,176,0.35);
+  }
+  nav.tabs button:not(.active):hover { color: var(--text); }
+
   .panel {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1.5rem;
+    border-radius: 18px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1.6rem;
+    backdrop-filter: blur(18px);
+    box-shadow: var(--shadow);
   }
   .controls { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
-  select, button {
-    font-size: 1rem;
-    padding: 0.55rem 0.9rem;
-    border-radius: 8px;
+  select, button.action {
+    font-size: 0.95rem;
+    padding: 0.65rem 1rem;
+    border-radius: 10px;
     border: 1px solid var(--border);
-    background: var(--panel);
+    background: rgba(255,255,255,0.06);
     color: var(--text);
+    font-family: inherit;
   }
-  button {
-    background: var(--accent);
-    color: #fff;
+  select { appearance: none; cursor: pointer; }
+  button.action {
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
     border: none;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-shadow: 0 8px 20px rgba(255,77,126,0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
-  button:hover { opacity: 0.9; }
+  button.action:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(255,77,126,0.42); }
   button.secondary {
     background: transparent;
     color: var(--text);
     border: 1px solid var(--border);
-    font-weight: 500;
+    font-weight: 600;
+    cursor: pointer;
   }
+  button.secondary:hover { border-color: rgba(255,255,255,0.3); }
+
   .equation {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: var(--muted);
     white-space: pre-wrap;
-    margin-top: 0.75rem;
+    margin-top: 1rem;
+    border-top: 1px dashed var(--border);
+    padding-top: 0.9rem;
   }
+
+  .list { display: flex; flex-direction: column; gap: 0.9rem; }
+
   .card {
-    background: var(--panel);
+    position: relative;
+    background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.1rem 1.4rem;
-    margin-bottom: 1rem;
+    border-radius: 18px;
+    padding: 1.2rem 1.4rem;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transform: translateY(14px);
+    animation: cardIn 0.5s ease forwards;
+    transition: transform 0.2s ease, border-color 0.2s ease;
   }
-  .card-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1rem;
-    margin-bottom: 0.6rem;
+  .card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.22); }
+  @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
+
+  .card.top1 { border-color: rgba(255,209,102,0.55); box-shadow: 0 0 0 1px rgba(255,209,102,0.25), var(--shadow); }
+  .card.top2 { border-color: rgba(217,217,227,0.4); }
+  .card.top3 { border-color: rgba(224,149,107,0.45); }
+
+  .card-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.9rem; flex-wrap: wrap; }
+  .rank-badge {
+    flex: none;
+    width: 2.4rem; height: 2.4rem;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 0.95rem;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border);
+    color: var(--text);
   }
-  .rank {
+  .rank-badge.r1 { background: linear-gradient(135deg, var(--gold), #a8730f); color: #2a1c00; box-shadow: 0 0 18px rgba(255,209,102,0.55); }
+  .rank-badge.r2 { background: linear-gradient(135deg, var(--silver), #8b8b99); color: #1b1a24; box-shadow: 0 0 14px rgba(217,217,227,0.4); }
+  .rank-badge.r3 { background: linear-gradient(135deg, var(--bronze), #8a4c26); color: #2a1400; box-shadow: 0 0 14px rgba(224,149,107,0.4); }
+
+  .name-block { flex: 1 1 auto; min-width: 0; }
+  .name { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em; }
+  .sport-tag {
     display: inline-block;
-    background: var(--accent-bg);
-    color: var(--accent);
+    font-size: 0.68rem;
     font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.55rem;
     border-radius: 999px;
-    width: 2rem;
-    height: 2rem;
-    text-align: center;
-    line-height: 2rem;
-    margin-right: 0.6rem;
-    font-size: 0.9rem;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    color: #0b0b14;
   }
-  .name { font-size: 1.15rem; font-weight: 700; }
-  .score { font-size: 1.15rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
+
+  .ring-wrap { flex: none; display: flex; align-items: center; gap: 0.7rem; margin-left: auto; }
+  .ring {
+    width: 62px; height: 62px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: conic-gradient(var(--ring-color, var(--accent)) calc(var(--pct) * 3.6deg), var(--track) 0deg);
+  }
+  .ring-inner {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--panel-solid);
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 0.85rem;
+  }
+  .score-label { font-size: 0.68rem; color: var(--muted); text-align: right; line-height: 1.2; }
+  .score-label b { display: block; color: var(--text); font-size: 0.95rem; }
+
   .row {
     display: grid;
-    grid-template-columns: 170px 1fr 70px;
+    grid-template-columns: 168px 1fr 44px;
     align-items: center;
     gap: 0.6rem;
-    margin: 0.35rem 0;
-    font-size: 0.88rem;
+    margin: 0.3rem 0;
+    font-size: 0.8rem;
   }
   .row .label { color: var(--muted); }
-  .track { background: var(--track); border-radius: 6px; height: 8px; overflow: hidden; }
-  .fill { background: var(--bar); height: 100%; border-radius: 6px; }
-  .contrib { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .note { margin-top: 0.7rem; font-size: 0.9rem; color: var(--muted); }
+  .track { background: var(--track); border-radius: 6px; height: 7px; overflow: hidden; }
+  .fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    width: 0%;
+    transition: width 0.9s cubic-bezier(.2,.8,.2,1);
+  }
+  .contrib { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.78rem; }
+
+  .note { margin-top: 0.8rem; font-size: 0.87rem; color: var(--muted); }
   .note strong { color: var(--text); }
-  footer { color: var(--muted); font-size: 0.8rem; margin-top: 2rem; }
-  .actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
+
+  .path {
+    margin-top: 0.6rem;
+    font-size: 0.85rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    background: rgba(124,92,255,0.1);
+    border: 1px solid rgba(124,92,255,0.28);
+    color: #cfc8ff;
+  }
+  .path.first {
+    background: rgba(255,209,102,0.1);
+    border-color: rgba(255,209,102,0.35);
+    color: #ffe9b8;
+  }
+  .path strong { color: #fff; }
+
+  footer.foot { color: var(--muted); font-size: 0.78rem; margin-top: 2.2rem; text-align: center; max-width: 60ch; margin-left: auto; margin-right: auto; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .section-title { font-size: 0.95rem; font-weight: 700; color: var(--muted); margin: 0 0 0.9rem; text-transform: uppercase; letter-spacing: 0.08em; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>GOAT Calculator</h1>
-  <p class="subtitle">Pick a sport. Get a ranked, math-backed top 10 of the greatest players of all time.</p>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div class="blob blob3"></div>
 
-  <div class="panel">
-    <div class="controls">
-      <select id="sportSelect"></select>
-      <button id="calcBtn">Calculate Top 10</button>
-      <button id="downloadBtn" class="secondary">Download report (.txt)</button>
+<div class="wrap">
+  <header class="hero">
+    <span class="badge-eyebrow">Data-Driven &middot; No BS Debates</span>
+    <h1>GOAT Calculator</h1>
+    <p class="subtitle">A weighted equation ranks the greatest players ever - and shows exactly what each one needs to climb higher.</p>
+  </header>
+
+  <nav class="tabs">
+    <button id="tabBySport" class="active">By Sport - Top 25</button>
+    <button id="tabAllTime">All-Time Top 10</button>
+  </nav>
+
+  <div id="screenBySport" class="screen active">
+    <div class="panel">
+      <div class="controls">
+        <select id="sportSelect"></select>
+        <button class="action" id="calcBtn">Calculate Top 25</button>
+        <button class="secondary" id="downloadBtn">Download report (.txt)</button>
+      </div>
+      <div class="equation" id="equationText"></div>
     </div>
-    <div class="equation" id="equationText"></div>
+    <div class="list" id="resultsBySport"></div>
   </div>
 
-  <div id="results"></div>
+  <div id="screenAllTime" class="screen">
+    <div class="panel">
+      <div class="controls">
+        <button class="action" id="downloadAllBtn">Download report (.txt)</button>
+      </div>
+      <p style="color:var(--muted); font-size:0.85rem; margin: 0.9rem 0 0;">
+        Every player from every sport, scored with the exact same equation, pooled together
+        and ranked by total GOAT Score. Cross-sport comparisons are illustrative - each
+        component is originally anchored to greatness within that player's own sport.
+      </p>
+    </div>
+    <div class="list" id="resultsAllTime"></div>
+  </div>
 
-  <footer>
+  <footer class="foot">
     Component ratings are anchored to real career achievements (titles, awards, records),
-    but the 0-100 values and weights are an original, editable formula &mdash; not an official statistic.
-    Edit the <code>WEIGHTS</code> or <code>SPORTS</code> objects in this file's source to reflect your own view
-    of what makes a player "greatest ever."
+    but the 0-100 values and weights are an original, editable formula &mdash; not an
+    official statistic. Edit <code>WEIGHTS</code> or <code>SPORTS</code> in this file's
+    source to reflect your own view of "greatest ever."
   </footer>
 </div>
 
@@ -177,6 +354,18 @@ const LABELS = {
   impact: "Historical Impact",
 };
 
+const SPORT_COLORS = {
+  basketball: "#ff9f43",
+  soccer: "#2ecc71",
+  american_football: "#c0392b",
+  baseball: "#3b82f6",
+  hockey: "#38bdf8",
+  tennis_men: "#a3e635",
+  tennis_women: "#ec4899",
+  boxing: "#ef4444",
+  golf: "#14b8a6",
+};
+
 const SPORTS = {
   basketball: { name: "Basketball (NBA)", players: [
     ["Michael Jordan", 99, 90, 95, 98, 80, 100, "6-0 in NBA Finals, 6 Finals MVPs, 5 MVPs, 10 scoring titles, never lost a Finals series."],
@@ -191,6 +380,19 @@ const SPORTS = {
     ["Kobe Bryant", 90, 87, 85, 72, 85, 90, "5 titles, 2 Finals MVPs, 81-point game, obsessive work ethic became its own cultural phenomenon."],
     ["Stephen Curry", 89, 78, 78, 75, 80, 96, "Only unanimous MVP ever, 4 titles, single-handedly changed how the game is played by revolutionizing 3-point shooting."],
     ["Hakeem Olajuwon", 87, 80, 75, 65, 82, 70, "Back-to-back titles and Finals MVPs in 1994-95, widely regarded as the most skilled big man ever."],
+    ["Kevin Durant", 90, 88, 70, 85, 80, 82, "2 titles, 2 Finals MVPs, 1 MVP, and 4 scoring titles - one of the purest scorers ever."],
+    ["Dirk Nowitzki", 82, 82, 68, 75, 88, 78, "2011 title and Finals MVP as the clear best player; redefined the stretch-big archetype."],
+    ["Karl Malone", 80, 88, 45, 78, 92, 65, "2nd all-time in scoring at retirement, 2 MVPs, but never won a title."],
+    ["Oscar Robertson", 88, 90, 60, 78, 82, 82, "Averaged a triple-double for a full season (1961-62); 1 MVP, 1 title."],
+    ["Jerry West", 85, 78, 55, 70, 78, 85, "The NBA's logo; 1 title but 9 Finals appearances and elite two-way play."],
+    ["Elgin Baylor", 84, 78, 30, 60, 72, 70, "Pioneered the above-the-rim game; 8 Finals losses without ever winning one."],
+    ["Moses Malone", 82, 82, 62, 75, 85, 60, "3 MVPs and a title with a famous 'Fo-Fo-Fo' playoff run in 1983."],
+    ["Scottie Pippen", 78, 70, 88, 55, 80, 72, "6 titles alongside Jordan; one of the most versatile two-way forwards ever."],
+    ["Isiah Thomas", 82, 70, 78, 60, 75, 68, "2 titles and a Finals MVP leading the 'Bad Boy' Pistons."],
+    ["David Robinson", 80, 78, 68, 78, 78, 65, "MVP, Defensive Player of the Year, and 2 titles as a foundational co-star."],
+    ["Charles Barkley", 84, 80, 20, 70, 78, 72, "1 MVP and one of the most dominant undersized power forwards ever, but never won a title."],
+    ["John Stockton", 70, 82, 30, 55, 95, 65, "All-time leader in assists and steals by a wide margin over 19 remarkably durable seasons."],
+    ["Giannis Antetokounmpo", 88, 82, 65, 82, 65, 78, "2 MVPs, 1 Defensive Player of the Year, and a 2021 title and Finals MVP."],
   ]},
   soccer: { name: "Soccer / Football (World)", players: [
     ["Lionel Messi", 97, 98, 90, 99, 92, 96, "Record 8 Ballon d'Or wins, 2022 World Cup title, all-time goal/assist production at the highest level for 20 years."],
@@ -205,6 +407,19 @@ const SPORTS = {
     ["Michel Platini", 87, 78, 78, 85, 65, 75, "3 consecutive Ballon d'Ors (1983-85); dominant Euro 1984 with 9 goals in 5 games."],
     ["Ronaldinho", 90, 75, 78, 78, 55, 88, "2002 World Cup and 2006 Champions League winner; his flair changed how a generation of players approached the game."],
     ["Eusebio", 85, 80, 60, 75, 65, 70, "1965 Ballon d'Or; led Portugal to 3rd place at the 1966 World Cup as tournament top scorer."],
+    ["Kylian Mbappe", 90, 85, 75, 82, 60, 78, "2018 World Cup winner and 2022 final hat-trick; already one of the most feared strikers ever at a young age."],
+    ["Neymar", 85, 75, 65, 68, 55, 78, "Elite creative talent for club and country, though injuries have limited his international peak."],
+    ["Xavi Hernandez", 82, 68, 92, 65, 85, 85, "Architect of tiki-taka; World Cup and back-to-back Euros with Spain, plus a stack of Champions League titles."],
+    ["Andres Iniesta", 85, 68, 90, 68, 82, 82, "Scored the 2010 World Cup-winning goal; central to Spain and Barcelona's most dominant eras."],
+    ["George Best", 88, 72, 55, 65, 45, 80, "1968 European Cup and Ballon d'Or; the sport's first true celebrity superstar."],
+    ["Paolo Maldini", 85, 60, 85, 60, 95, 82, "5 Champions League titles across an astonishing 25-year career, almost entirely at the top level."],
+    ["Thierry Henry", 87, 82, 70, 70, 80, 80, "World Cup and Euro winner; Arsenal's 'Invincibles' talisman and one of the great pure finishers."],
+    ["Roberto Baggio", 84, 72, 55, 68, 78, 75, "1993 Ballon d'Or and the emotional heart of Italian football through the 1990s."],
+    ["Ferenc Puskas", 90, 88, 70, 65, 70, 78, "Legendary goal ratio for Hungary and Real Madrid; part of the trophy-laden 'Mighty Magyars'."],
+    ["Garrincha", 90, 75, 88, 60, 60, 72, "Won 2 World Cups (1958, 1962) and was widely considered Brazil's true star of that era alongside Pele."],
+    ["Marco van Basten", 90, 78, 68, 78, 45, 75, "3 Ballon d'Ors and a Euro 1988 title, though a career-ending ankle injury cut his prime short."],
+    ["Luka Modric", 80, 68, 80, 78, 85, 72, "2018 Ballon d'Or, breaking the Messi/Ronaldo streak; World Cup final and 4 Champions League titles."],
+    ["Karim Benzema", 85, 80, 85, 75, 82, 68, "2022 Ballon d'Or and 5 Champions League titles as Real Madrid's talisman."],
   ]},
   american_football: { name: "American Football (NFL)", players: [
     ["Tom Brady", 92, 90, 99, 90, 97, 92, "7 Super Bowl titles (most ever), 5 Super Bowl MVPs, 3 NFL MVPs, elite production across 23 seasons."],
@@ -219,6 +434,19 @@ const SPORTS = {
     ["Deion Sanders", 90, 75, 75, 65, 70, 80, "Shut down entire sides of the field as a corner while also being an elite kick/punt returner; 2 Super Bowls."],
     ["Aaron Donald", 93, 80, 68, 78, 60, 70, "3-time Defensive Player of the Year, arguably the most dominant interior defensive lineman ever."],
     ["Randy Moss", 92, 85, 55, 65, 75, 80, "Redefined the deep-threat receiver; single-season touchdown record (23) still stands."],
+    ["Johnny Unitas", 88, 75, 82, 78, 78, 85, "3 championships including Super Bowl V; pioneered the modern quarterback position."],
+    ["Otto Graham", 92, 70, 95, 65, 65, 70, "Led his team to the championship game in all 10 of his professional seasons, winning 7."],
+    ["John Elway", 85, 78, 78, 68, 85, 78, "2 Super Bowl titles including 'The Drive' era Broncos; 1 MVP."],
+    ["Brett Favre", 82, 88, 65, 82, 90, 78, "3 consecutive MVPs (only player to do it), career passing records, and a consecutive-starts ironman streak."],
+    ["Emmitt Smith", 82, 90, 85, 70, 85, 72, "All-time leading rusher and a 3-time Super Bowl champion."],
+    ["Dan Marino", 85, 88, 30, 70, 85, 75, "Shattered nearly every passing record of his era despite never winning a Super Bowl."],
+    ["J.J. Watt", 92, 82, 20, 68, 65, 68, "3-time Defensive Player of the Year and one of the most disruptive pass rushers of his generation."],
+    ["Rod Woodson", 82, 78, 60, 62, 85, 65, "Elite ball-hawking corner and versatile defender across a 17-year Hall of Fame career."],
+    ["Anthony Munoz", 85, 65, 30, 62, 82, 65, "Widely considered the greatest offensive tackle in NFL history despite limited team success."],
+    ["Adrian Peterson", 90, 82, 20, 75, 75, 68, "MVP as a running back (a rare feat) and one of the most explosive rushers ever."],
+    ["Ray Lewis", 88, 78, 78, 70, 88, 78, "2 Super Bowl titles, 1 Super Bowl MVP, 2-time Defensive Player of the Year and defensive leader."],
+    ["Champ Bailey", 82, 70, 20, 55, 82, 55, "One of the most complete cover corners ever, though never reached a Super Bowl title."],
+    ["Patrick Mahomes", 92, 85, 85, 82, 55, 80, "3 Super Bowl titles, 2 Super Bowl MVPs, and 2 NFL MVPs through the prime of his career."],
   ]},
   baseball: { name: "Baseball (MLB)", players: [
     ["Babe Ruth", 99, 96, 90, 85, 85, 100, "Redefined the sport around power hitting; 7 World Series titles; still the sport's most iconic figure."],
@@ -233,6 +461,19 @@ const SPORTS = {
     ["Stan Musial", 85, 87, 70, 78, 90, 70, "3 MVPs and remarkable consistency across 22 seasons, almost entirely with one franchise."],
     ["Honus Wagner", 84, 82, 55, 65, 82, 65, "8 batting titles in the dead-ball era; regarded as the best shortstop of the pre-modern game."],
     ["Rickey Henderson", 86, 88, 60, 70, 92, 78, "All-time stolen base and runs scored leader by wide margins; played at a high level into his 40s."],
+    ["Cy Young", 88, 95, 60, 60, 92, 80, "511 career wins - a record that will almost certainly never be broken."],
+    ["Roger Clemens", 90, 90, 55, 88, 88, 65, "Record 7 Cy Young Awards, though his legacy is tempered by steroid allegations."],
+    ["Greg Maddux", 88, 85, 45, 78, 90, 75, "4 consecutive Cy Young Awards built entirely on pitch command and precision."],
+    ["Randy Johnson", 90, 88, 60, 78, 85, 72, "2nd most strikeouts ever and a co-World Series MVP; 5 Cy Young Awards."],
+    ["Pedro Martinez", 96, 80, 45, 75, 65, 75, "Some of the most dominant single-season pitching numbers ever recorded, relative to his era."],
+    ["Sandy Koufax", 95, 70, 82, 75, 40, 72, "One of the most dominant short peaks in sports history before an arm injury forced retirement at 30."],
+    ["Nolan Ryan", 82, 92, 40, 55, 96, 78, "All-time strikeout leader by a huge margin and a record 7 no-hitters over 27 seasons."],
+    ["Albert Pujols", 88, 90, 68, 80, 88, 72, "700-home-run club member with 3 MVPs and 2 World Series titles."],
+    ["Derek Jeter", 75, 78, 85, 55, 85, 82, "5 World Series titles as Yankees captain and a franchise-defining cultural icon."],
+    ["Alex Rodriguez", 90, 92, 60, 85, 85, 60, "696 career home runs and 3 MVPs, though his legacy is heavily tempered by a steroid suspension."],
+    ["Joe DiMaggio", 90, 80, 92, 70, 65, 85, "56-game hitting streak (unbreakable record) and 9 World Series titles in 13 seasons."],
+    ["Yogi Berra", 78, 68, 96, 72, 78, 70, "10 World Series titles - the most of any player ever - and 3 MVP awards."],
+    ["Mike Trout", 90, 85, 20, 80, 65, 65, "3 MVPs and arguably the best all-around player of his generation, despite little playoff success."],
   ]},
   hockey: { name: "Ice Hockey (NHL)", players: [
     ["Wayne Gretzky", 100, 100, 90, 98, 90, 100, "Holds 60+ NHL records; his career assist total alone exceeds the career point total of every other player."],
@@ -247,6 +488,19 @@ const SPORTS = {
     ["Alexander Ovechkin", 90, 92, 55, 78, 88, 82, "Broke the all-time goal-scoring record; 3-time MVP and generational goal scorer."],
     ["Jean Beliveau", 78, 72, 96, 60, 80, 70, "10 Stanley Cup titles as a player - the most of anyone on this list."],
     ["Nicklas Lidstrom", 78, 65, 78, 70, 85, 65, "7 Norris Trophies as the league's best defenseman and 4 Stanley Cups without ever missing the playoffs."],
+    ["Guy Lafleur", 88, 78, 85, 70, 75, 75, "5 Stanley Cups and 2 MVPs as the face of the Canadiens dynasty of the 1970s."],
+    ["Jaromir Jagr", 85, 90, 62, 70, 95, 78, "2nd all-time in points, playing at a high level across an astonishing 24 NHL seasons."],
+    ["Steve Yzerman", 80, 78, 82, 60, 88, 72, "3 Stanley Cups as captain, transforming from scorer to two-way leader."],
+    ["Terry Sawchuk", 85, 70, 78, 65, 82, 70, "Held the career shutout record for decades across 4 Stanley Cup titles."],
+    ["Martin Brodeur", 82, 78, 78, 62, 90, 72, "Most wins and shutouts by a goaltender in NHL history; 3 Stanley Cups."],
+    ["Doug Harvey", 78, 62, 82, 65, 80, 65, "7 Norris Trophies and 6 Stanley Cups as the era's dominant defenseman."],
+    ["Ray Bourque", 80, 78, 55, 68, 92, 72, "Highest-scoring defenseman ever, capped by a Stanley Cup in his very last season."],
+    ["Phil Esposito", 85, 82, 68, 68, 78, 75, "First player to reach 100 points in a season multiple times; 2 Stanley Cups, 2 MVPs."],
+    ["Connor McDavid", 92, 85, 40, 78, 55, 78, "2-time MVP and the most dominant skater of his generation, still chasing his first Cup."],
+    ["Eddie Shore", 82, 65, 65, 62, 70, 65, "4 Stanley Cups and 4 MVPs as one of the earliest dominant defensemen."],
+    ["Denis Potvin", 78, 70, 82, 60, 78, 62, "4 consecutive Stanley Cups as captain of the Islanders dynasty."],
+    ["Ken Dryden", 85, 60, 90, 65, 40, 65, "6 Stanley Cups in just 8 seasons before retiring early at his peak."],
+    ["Bobby Clarke", 78, 70, 78, 68, 75, 65, "3-time MVP and 2 Stanley Cups leading the 'Broad Street Bullies' era Flyers."],
   ]},
   tennis_men: { name: "Tennis - Men's", players: [
     ["Novak Djokovic", 96, 99, 98, 96, 95, 92, "Most men's Grand Slam titles ever (24), record weeks at world No. 1, winning record against every rival."],
@@ -259,6 +513,21 @@ const SPORTS = {
     ["John McEnroe", 85, 60, 65, 65, 55, 75, "7 Grand Slam singles titles and dominant doubles career; one of the most compelling personalities in the sport."],
     ["Ivan Lendl", 82, 68, 65, 65, 78, 65, "8 Grand Slam titles and a record 270 weeks at world No. 1 across his career."],
     ["Jimmy Connors", 80, 65, 60, 62, 85, 70, "Most ATP tour-level titles ever (109) and 8 Grand Slam singles titles across three different decades."],
+    ["Bill Tilden", 90, 70, 78, 65, 75, 82, "Dominated the 1920s with 10 majors, becoming American tennis's first true superstar."],
+    ["Ken Rosewall", 82, 68, 70, 60, 90, 65, "8 majors, with many prime years spent in the pro-only ranks before the Open era."],
+    ["Roy Emerson", 78, 75, 68, 58, 78, 55, "12 majors, though largely against weaker fields in the pre-Open era."],
+    ["Andy Murray", 78, 60, 65, 55, 75, 68, "3 majors plus 2 Olympic golds; ended a 77-year British drought at Wimbledon."],
+    ["Stan Wawrinka", 75, 55, 55, 50, 65, 50, "3 Grand Slam titles, each won by beating the world No. 1 in the final."],
+    ["Boris Becker", 82, 60, 62, 58, 62, 72, "Youngest-ever Wimbledon champion at 17; 6 Grand Slam titles."],
+    ["Stefan Edberg", 78, 58, 60, 55, 68, 62, "6 Grand Slam titles built on one of the great serve-and-volley games."],
+    ["Mats Wilander", 78, 60, 60, 55, 60, 58, "7 majors won across every surface, including a Grand Slam-caliber 1988."],
+    ["Guillermo Vilas", 75, 62, 55, 52, 70, 55, "4 majors and a record for most tour titles won in a single season."],
+    ["Arthur Ashe", 76, 55, 55, 52, 60, 88, "3 majors, but a legacy defined even more by his civil-rights and social impact."],
+    ["Fred Perry", 82, 58, 65, 55, 55, 70, "8 majors including 3 consecutive Wimbledon titles in the 1930s."],
+    ["Don Budge", 88, 55, 68, 55, 45, 75, "First player ever to complete the calendar-year Grand Slam, in 1938."],
+    ["Pancho Gonzales", 85, 55, 55, 50, 78, 65, "Dominated the pro tour for years in an era when those results didn't count toward majors."],
+    ["Carlos Alcaraz", 88, 62, 68, 65, 40, 72, "4 Grand Slam titles already secured while still early in his career."],
+    ["Daniil Medvedev", 78, 55, 50, 55, 55, 50, "1 Grand Slam title and multiple finals against the sport's all-time greats."],
   ]},
   tennis_women: { name: "Tennis - Women's", players: [
     ["Serena Williams", 97, 92, 92, 90, 92, 98, "23 Grand Slam singles titles in the Open Era (most ever); redefined power and athleticism in the women's game."],
@@ -271,6 +540,21 @@ const SPORTS = {
     ["Suzanne Lenglen", 88, 60, 60, 55, 50, 80, "Pre-Open-era pioneer who drew unprecedented crowds and legitimized women's tennis as a spectator sport."],
     ["Venus Williams", 82, 70, 68, 68, 85, 82, "7 Grand Slam singles titles and a driving force behind equal prize money for women at majors."],
     ["Martina Hingis", 78, 62, 60, 60, 65, 68, "Youngest world No. 1 in history; 5 Grand Slam singles titles built on elite court IQ."],
+    ["Maureen Connolly", 92, 55, 68, 55, 30, 70, "First woman to complete a calendar-year Grand Slam (1953); career ended at 19 by injury."],
+    ["Helen Wills Moody", 88, 70, 72, 55, 75, 72, "19 majors and 8 Wimbledon titles across a dominant amateur-era career."],
+    ["Evonne Goolagong", 80, 60, 62, 55, 70, 68, "7 majors and one of the most graceful, athletic players of her generation."],
+    ["Justine Henin", 90, 68, 70, 65, 55, 68, "7 majors built around one of the greatest one-handed backhands ever."],
+    ["Maria Sharapova", 82, 60, 62, 58, 60, 82, "Career Grand Slam winner and one of the biggest commercial and global stars the sport has had."],
+    ["Lindsay Davenport", 78, 58, 58, 55, 68, 58, "3 majors and 98 weeks at world No. 1."],
+    ["Arantxa Sanchez Vicario", 75, 55, 55, 50, 70, 58, "4 majors and a key rival to the top American stars of the 1990s."],
+    ["Naomi Osaka", 80, 55, 58, 60, 45, 82, "4 majors plus major social-activism impact on and off the court."],
+    ["Iga Swiatek", 85, 60, 62, 62, 45, 68, "5 majors already won while still in the earlier stages of her career."],
+    ["Ashleigh Barty", 82, 50, 58, 55, 30, 65, "3 majors, including Wimbledon, before retiring at 25 while still world No. 1."],
+    ["Tracy Austin", 78, 45, 45, 45, 25, 55, "Youngest-ever US Open champion, though injuries ended her prime early."],
+    ["Kim Clijsters", 78, 55, 55, 52, 65, 65, "4 majors, including a remarkable US Open title won as a comeback mother."],
+    ["Amelie Mauresmo", 72, 45, 48, 45, 62, 60, "2 majors and the first openly gay world No. 1, a landmark for LGBTQ visibility in sport."],
+    ["Doris Hart", 75, 55, 55, 48, 68, 55, "6 singles majors and a career Grand Slam across singles, doubles, and mixed doubles."],
+    ["Helen Jacobs", 68, 45, 48, 42, 62, 50, "5 majors during one of the sport's earliest competitive eras."],
   ]},
   boxing: { name: "Boxing", players: [
     ["Muhammad Ali", 95, 80, 92, 85, 80, 100, "3-time heavyweight champion; global cultural icon whose impact transcended the sport entirely."],
@@ -283,6 +567,21 @@ const SPORTS = {
     ["Manny Pacquiao", 90, 85, 82, 78, 85, 85, "Only boxer to win world titles in eight different weight divisions."],
     ["Julio Cesar Chavez", 85, 88, 78, 68, 82, 72, "Started his career 89-0-1; 107 career wins and a Mexican boxing icon."],
     ["Henry Armstrong", 88, 78, 82, 65, 70, 75, "The only boxer to simultaneously hold world titles in three different weight classes at once."],
+    ["Jack Johnson", 88, 65, 82, 60, 78, 92, "First Black heavyweight champion; broke enormous racial barriers both in and out of the ring."],
+    ["Joe Frazier", 88, 75, 75, 65, 65, 75, "Undisputed heavyweight champion, best known for beating Ali in 'The Fight of the Century'."],
+    ["George Foreman", 90, 78, 75, 65, 82, 78, "Two-era heavyweight champion, including the oldest-ever title win at 45."],
+    ["Larry Holmes", 85, 82, 78, 65, 82, 65, "Started his title reign 48-0 with 20 successful championship defenses."],
+    ["Evander Holyfield", 85, 80, 78, 65, 85, 72, "4-time heavyweight champion known for his warrior mentality and big-fight resume."],
+    ["Lennox Lewis", 85, 78, 80, 65, 78, 68, "Undisputed heavyweight champion who beat both Tyson and Holyfield in his prime."],
+    ["Bernard Hopkins", 82, 80, 75, 62, 95, 65, "Defended the middleweight title a record 20 times and fought competitively into his late 40s."],
+    ["Oscar De La Hoya", 82, 78, 75, 65, 75, 82, "Multi-division champion and one of the biggest pay-per-view draws in boxing history."],
+    ["Marvin Hagler", 90, 82, 78, 65, 78, 70, "Undisputed middleweight champion with 12 consecutive title defenses."],
+    ["Thomas Hearns", 85, 78, 72, 62, 75, 70, "World champion across a record 6 different weight divisions."],
+    ["Archie Moore", 78, 82, 65, 55, 90, 62, "Most knockouts in boxing history, spread across a career of more than 20 years."],
+    ["Willie Pep", 85, 85, 68, 58, 82, 60, "229-11-1 career record and widely regarded as the greatest featherweight ever."],
+    ["Canelo Alvarez", 85, 82, 78, 68, 75, 78, "Undisputed champion across multiple weight classes at the top of the sport for over a decade."],
+    ["Terence Crawford", 88, 78, 75, 65, 65, 68, "Undisputed champion in two different weight divisions with a flawless record."],
+    ["Sugar Ray Leonard", 90, 78, 80, 68, 65, 82, "Champion in 5 weight divisions, defined by iconic fights against Hearns, Hagler, and Duran."],
   ]},
   golf: { name: "Golf", players: [
     ["Tiger Woods", 99, 92, 90, 95, 85, 100, "15 major titles, 82 PGA Tour wins (tied for most ever); the 'Tiger Slam' remains unmatched dominance."],
@@ -295,74 +594,173 @@ const SPORTS = {
     ["Tom Watson", 80, 72, 68, 68, 80, 68, "8 major titles and a near-miss at the 2009 Open Championship at age 59."],
     ["Walter Hagen", 82, 68, 78, 62, 75, 75, "11 major championships (2nd all-time) and a key figure in legitimizing professional golfers socially."],
     ["Byron Nelson", 90, 65, 62, 65, 45, 65, "Won 11 consecutive PGA Tour events in 1945 - a record considered untouchable."],
+    ["Seve Ballesteros", 88, 68, 72, 62, 60, 82, "5 majors and a flair for the game that globalized golf and defined Ryder Cup passion."],
+    ["Nick Faldo", 82, 72, 70, 62, 75, 65, "6 majors and the most career Ryder Cup points of any player in history."],
+    ["Phil Mickelson", 80, 78, 68, 60, 90, 80, "6 majors including the oldest major championship win ever, at age 50."],
+    ["Rory McIlroy", 85, 78, 70, 68, 70, 75, "Career Grand Slam winner and one of the most complete ball-strikers of his generation."],
+    ["Vijay Singh", 78, 75, 62, 60, 82, 55, "3 majors and 34 wins, including Player of the Year honors in his 40s."],
+    ["Greg Norman", 85, 68, 55, 60, 68, 75, "331 weeks at world No. 1 despite only 2 majors, defined by a legendary near-miss resume."],
+    ["Lee Trevino", 80, 68, 65, 58, 75, 65, "6 majors won with a distinctive, self-taught swing and sharp wit."],
+    ["Raymond Floyd", 75, 65, 60, 55, 82, 55, "4 majors, including becoming the oldest US Open champion at the time."],
+    ["Harry Vardon", 85, 70, 68, 55, 80, 78, "7 majors including a record 6 Open Championships; the modern grip is named after him."],
+    ["Peter Thomson", 78, 65, 62, 55, 78, 58, "5 Open Championship titles across the 1950s and 60s."],
+    ["Billy Casper", 75, 70, 58, 55, 82, 50, "3 majors and 51 PGA Tour wins, 7th most all time despite being often overlooked."],
+    ["Jon Rahm", 85, 65, 62, 62, 55, 62, "2 majors already won while still in the middle of his prime career."],
+    ["Ernie Els", 78, 70, 62, 58, 85, 62, "4 majors won with one of the smoothest swings the game has seen."],
+    ["Hale Irwin", 72, 62, 55, 50, 88, 50, "3 US Open titles and dominant senior-tour success into his 60s."],
+    ["Cary Middlecoff", 75, 62, 55, 50, 62, 48, "3 majors and 40 wins in a relatively short competitive window as a dentist-turned-golfer."],
   ]},
 };
 
-function playerObj(arr) {
+const SPORT_KEYS = Object.keys(SPORTS);
+
+// ---------------------------------------------------------------------------
+// Scoring
+// ---------------------------------------------------------------------------
+
+function buildPlayer(sportKey, arr) {
   const [name, peak, stat, champ, hardware, longevity, impact, note] = arr;
   const scores = { peak, stat, champ, hardware, longevity, impact };
   const total = Object.keys(WEIGHTS).reduce((sum, k) => sum + WEIGHTS[k] * scores[k], 0);
-  return { name, scores, note, total };
+  return { name, sportKey, sportName: SPORTS[sportKey].name, scores, note, total };
 }
 
-function rankPlayers(sportKey) {
-  const players = SPORTS[sportKey].players.map(playerObj);
-  return players.sort((a, b) => b.total - a.total).slice(0, 10);
+function rankPlayers(sportKey, count) {
+  const players = SPORTS[sportKey].players.map(p => buildPlayer(sportKey, p));
+  return players.sort((a, b) => b.total - a.total).slice(0, count);
+}
+
+function rankAllTime(count) {
+  let pool = [];
+  SPORT_KEYS.forEach(key => {
+    pool = pool.concat(SPORTS[key].players.map(p => buildPlayer(key, p)));
+  });
+  return pool.sort((a, b) => b.total - a.total).slice(0, count);
 }
 
 function equationText() {
   return "GOAT Score = " + Object.keys(WEIGHTS)
     .map(k => `${WEIGHTS[k].toFixed(2)} x ${LABELS[k]}`)
-    .join("\n           + ") + "\n(each component scored 0-100; final score out of 100)";
+    .join("\n           + ") + "\n(each component scored 0-100; final score out of 100; top 25 shown per sport)";
 }
 
-function renderResults(sportKey) {
-  const sport = SPORTS[sportKey];
-  const ranked = rankPlayers(sportKey);
-  const container = document.getElementById("results");
-  container.innerHTML = "";
+// For a player at a given rank within `list`, work out the most efficient
+// single lever to close the gap with the player directly above them.
+function movePathHtml(list, index) {
+  if (index === 0) {
+    return `<div class="path first"><strong>#1 overall.</strong> This is the bar every other player on the list is measured against.</div>`;
+  }
+  const player = list[index];
+  const above = list[index - 1];
+  const gap = above.total - player.total;
 
-  ranked.forEach((p, i) => {
-    const card = document.createElement("div");
-    card.className = "card";
+  let best = null;
+  Object.keys(WEIGHTS).forEach(k => {
+    const raw = player.scores[k];
+    const room = 100 - raw;
+    const neededRaw = gap / WEIGHTS[k];
+    if (neededRaw <= room + 0.001) {
+      if (!best || neededRaw < best.neededRaw) best = { k, raw, neededRaw };
+    }
+  });
 
-    let rowsHtml = "";
-    Object.keys(WEIGHTS).forEach(k => {
-      const raw = p.scores[k];
-      const weighted = (raw * WEIGHTS[k]).toFixed(2);
-      rowsHtml += `
-        <div class="row">
-          <div class="label">${LABELS[k]}</div>
-          <div class="track"><div class="fill" style="width:${raw}%"></div></div>
-          <div class="contrib">${raw}/100</div>
-        </div>
-        <div class="row" style="margin-top:-0.3rem;">
-          <div class="label"></div>
-          <div class="label">&times; ${WEIGHTS[k].toFixed(2)} weight</div>
-          <div class="contrib">= ${weighted}</div>
-        </div>`;
-    });
+  if (best) {
+    const newRaw = Math.min(100, Math.ceil(best.raw + best.neededRaw));
+    return `<div class="path">Trails <strong>${above.name}</strong> by <strong>${gap.toFixed(2)} pts</strong>.
+      Fastest path: raise <strong>${LABELS[best.k]}</strong> from ${best.raw} to ~${newRaw}/100 &mdash;
+      that alone closes the gap.</div>`;
+  }
 
-    card.innerHTML = `
-      <div class="card-head">
-        <div><span class="rank">${i + 1}</span><span class="name">${p.name}</span></div>
-        <div class="score">${p.total.toFixed(2)} / 100</div>
+  const sorted = Object.keys(WEIGHTS).sort((a, b) => player.scores[a] - player.scores[b]);
+  const [c1, c2] = sorted;
+  return `<div class="path">Trails <strong>${above.name}</strong> by <strong>${gap.toFixed(2)} pts</strong>.
+    No single category closes it alone &mdash; needs combined gains in
+    <strong>${LABELS[c1]}</strong> (${player.scores[c1]}/100) and <strong>${LABELS[c2]}</strong> (${player.scores[c2]}/100),
+    the two weakest spots in the profile.</div>`;
+}
+
+function rankClass(i) {
+  if (i === 0) return "top1";
+  if (i === 1) return "top2";
+  if (i === 2) return "top3";
+  return "";
+}
+function badgeClass(i) {
+  if (i === 0) return "rank-badge r1";
+  if (i === 1) return "rank-badge r2";
+  if (i === 2) return "rank-badge r3";
+  return "rank-badge";
+}
+
+function renderRows(player) {
+  return Object.keys(WEIGHTS).map(k => {
+    const raw = player.scores[k];
+    const weighted = (raw * WEIGHTS[k]).toFixed(2);
+    return `
+      <div class="row">
+        <div class="label">${LABELS[k]}</div>
+        <div class="track"><div class="fill" data-pct="${raw}" style="width:0%"></div></div>
+        <div class="contrib">${raw}</div>
       </div>
-      ${rowsHtml}
-      <div class="note"><strong>Why:</strong> ${p.note}</div>
-    `;
-    container.appendChild(card);
+      <div class="row" style="margin-top:-0.25rem;">
+        <div class="label"></div>
+        <div class="label">&times; ${WEIGHTS[k].toFixed(2)} weight</div>
+        <div class="contrib">=${weighted}</div>
+      </div>`;
+  }).join("");
+}
+
+function renderCard(player, index, list, showSportTag) {
+  const tag = showSportTag
+    ? `<span class="sport-tag" style="background:${SPORT_COLORS[player.sportKey]}">${player.sportName}</span>`
+    : "";
+  return `
+    <div class="card ${rankClass(index)}" style="animation-delay:${Math.min(index * 0.05, 1)}s">
+      <div class="card-head">
+        <div class="${badgeClass(index)}">${index + 1}</div>
+        <div class="name-block">
+          <span class="name">${player.name}</span>${tag}
+        </div>
+        <div class="ring-wrap">
+          <div class="ring" style="--pct:${player.total}; --ring-color:${showSportTag ? SPORT_COLORS[player.sportKey] : 'var(--accent)'}">
+            <div class="ring-inner">${player.total.toFixed(1)}</div>
+          </div>
+          <div class="score-label">GOAT Score<b>/100</b></div>
+        </div>
+      </div>
+      ${renderRows(player)}
+      <div class="note"><strong>Why:</strong> ${player.note}</div>
+      ${movePathHtml(list, index)}
+    </div>`;
+}
+
+function animateBars(container) {
+  requestAnimationFrame(() => {
+    container.querySelectorAll(".fill").forEach(el => {
+      const pct = el.getAttribute("data-pct");
+      requestAnimationFrame(() => { el.style.width = pct + "%"; });
+    });
   });
 }
 
-function currentReportText() {
-  const sel = document.getElementById("sportSelect");
-  const sportKey = sel.value;
-  const sport = SPORTS[sportKey];
-  const ranked = rankPlayers(sportKey);
+function renderResultsBySport(sportKey) {
+  const list = rankPlayers(sportKey, 25);
+  const container = document.getElementById("resultsBySport");
+  container.innerHTML = list.map((p, i) => renderCard(p, i, list, false)).join("");
+  animateBars(container);
+}
+
+function renderResultsAllTime() {
+  const list = rankAllTime(10);
+  const container = document.getElementById("resultsAllTime");
+  container.innerHTML = list.map((p, i) => renderCard(p, i, list, true)).join("");
+  animateBars(container);
+}
+
+function reportText(list, title, crossSport) {
   let lines = [];
   lines.push("=".repeat(78));
-  lines.push(`GOAT CALCULATOR - Top 10: ${sport.name}`);
+  lines.push(`GOAT CALCULATOR - ${title}`);
   lines.push(`Generated: ${new Date().toISOString()}`);
   lines.push("=".repeat(78));
   lines.push("");
@@ -370,9 +768,10 @@ function currentReportText() {
   lines.push("-".repeat(78));
   lines.push(equationText());
   lines.push("");
-  ranked.forEach((p, i) => {
+  list.forEach((p, i) => {
     lines.push("-".repeat(78));
-    lines.push(`#${i + 1}  ${p.name}  -  GOAT Score: ${p.total.toFixed(2)} / 100`);
+    const sportSuffix = crossSport ? `  [${p.sportName}]` : "";
+    lines.push(`#${i + 1}  ${p.name}${sportSuffix}  -  GOAT Score: ${p.total.toFixed(2)} / 100`);
     lines.push("-".repeat(78));
     Object.keys(WEIGHTS).forEach(k => {
       const raw = p.scores[k];
@@ -380,6 +779,9 @@ function currentReportText() {
       lines.push(`  ${LABELS[k].padEnd(32)} ${String(raw).padStart(3)}/100  x${WEIGHTS[k].toFixed(2)} = ${weighted}`);
     });
     lines.push(`  Why: ${p.note}`);
+    const tmp = document.createElement("div");
+    tmp.innerHTML = movePathHtml(list, i);
+    lines.push(`  Path up: ${tmp.textContent.trim()}`);
     lines.push("");
   });
   lines.push("=".repeat(78));
@@ -390,9 +792,43 @@ function currentReportText() {
   return lines.join("\n");
 }
 
+function downloadText(text, filename) {
+  const blob = new Blob([text], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function initTabs() {
+  const tabBySport = document.getElementById("tabBySport");
+  const tabAllTime = document.getElementById("tabAllTime");
+  const screenBySport = document.getElementById("screenBySport");
+  const screenAllTime = document.getElementById("screenAllTime");
+
+  tabBySport.addEventListener("click", () => {
+    tabBySport.classList.add("active");
+    tabAllTime.classList.remove("active");
+    screenBySport.classList.add("active");
+    screenAllTime.classList.remove("active");
+  });
+  tabAllTime.addEventListener("click", () => {
+    tabAllTime.classList.add("active");
+    tabBySport.classList.remove("active");
+    screenAllTime.classList.add("active");
+    screenBySport.classList.remove("active");
+    if (!screenAllTime.dataset.loaded) {
+      renderResultsAllTime();
+      screenAllTime.dataset.loaded = "1";
+    }
+  });
+}
+
 function init() {
   const select = document.getElementById("sportSelect");
-  Object.keys(SPORTS).forEach(key => {
+  SPORT_KEYS.forEach(key => {
     const opt = document.createElement("option");
     opt.value = key;
     opt.textContent = SPORTS[key].name;
@@ -401,21 +837,19 @@ function init() {
   document.getElementById("equationText").textContent = equationText();
 
   document.getElementById("calcBtn").addEventListener("click", () => {
-    renderResults(select.value);
+    renderResultsBySport(select.value);
   });
-
   document.getElementById("downloadBtn").addEventListener("click", () => {
-    const text = currentReportText();
-    const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${select.value}_top10_goat.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const list = rankPlayers(select.value, 25);
+    downloadText(reportText(list, `Top 25: ${SPORTS[select.value].name}`, false), `${select.value}_top25_goat.txt`);
+  });
+  document.getElementById("downloadAllBtn").addEventListener("click", () => {
+    const list = rankAllTime(10);
+    downloadText(reportText(list, "All-Time Top 10 (Every Sport)", true), `all_sports_top10_goat.txt`);
   });
 
-  renderResults(select.value);
+  initTabs();
+  renderResultsBySport(select.value);
 }
 
 init();
