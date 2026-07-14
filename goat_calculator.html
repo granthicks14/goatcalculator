@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GOAT Calculator</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f5f5f7;
+    --panel: #ffffff;
+    --text: #1b1b1f;
+    --muted: #5b5b63;
+    --border: #dcdce0;
+    --accent: #a6192e;
+    --accent-bg: #fbe9eb;
+    --bar: #a6192e;
+    --track: #ececef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --panel: #201f24;
+      --text: #eaeaef;
+      --muted: #a3a3ad;
+      --border: #35343b;
+      --accent: #ff5f72;
+      --accent-bg: #3a1e22;
+      --bar: #ff5f72;
+      --track: #35343b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2rem 1rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .controls { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+  select, button {
+    font-size: 1rem;
+    padding: 0.55rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+  }
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button:hover { opacity: 0.9; }
+  button.secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    font-weight: 500;
+  }
+  .equation {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+    white-space: pre-wrap;
+    margin-top: 0.75rem;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1.4rem;
+    margin-bottom: 1rem;
+  }
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 0.6rem;
+  }
+  .rank {
+    display: inline-block;
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 700;
+    border-radius: 999px;
+    width: 2rem;
+    height: 2rem;
+    text-align: center;
+    line-height: 2rem;
+    margin-right: 0.6rem;
+    font-size: 0.9rem;
+  }
+  .name { font-size: 1.15rem; font-weight: 700; }
+  .score { font-size: 1.15rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .row {
+    display: grid;
+    grid-template-columns: 170px 1fr 70px;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.35rem 0;
+    font-size: 0.88rem;
+  }
+  .row .label { color: var(--muted); }
+  .track { background: var(--track); border-radius: 6px; height: 8px; overflow: hidden; }
+  .fill { background: var(--bar); height: 100%; border-radius: 6px; }
+  .contrib { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .note { margin-top: 0.7rem; font-size: 0.9rem; color: var(--muted); }
+  .note strong { color: var(--text); }
+  footer { color: var(--muted); font-size: 0.8rem; margin-top: 2rem; }
+  .actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GOAT Calculator</h1>
+  <p class="subtitle">Pick a sport. Get a ranked, math-backed top 10 of the greatest players of all time.</p>
+
+  <div class="panel">
+    <div class="controls">
+      <select id="sportSelect"></select>
+      <button id="calcBtn">Calculate Top 10</button>
+      <button id="downloadBtn" class="secondary">Download report (.txt)</button>
+    </div>
+    <div class="equation" id="equationText"></div>
+  </div>
+
+  <div id="results"></div>
+
+  <footer>
+    Component ratings are anchored to real career achievements (titles, awards, records),
+    but the 0-100 values and weights are an original, editable formula &mdash; not an official statistic.
+    Edit the <code>WEIGHTS</code> or <code>SPORTS</code> objects in this file's source to reflect your own view
+    of what makes a player "greatest ever."
+  </footer>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// THE EQUATION
+// GOAT Score = 0.25*PeakDominance + 0.20*StatProduction + 0.20*Championships
+//            + 0.15*IndividualHardware + 0.10*Longevity + 0.10*HistoricalImpact
+// Every component is scored 0-100, anchored to the best-ever performer in that
+// sport for that category. Runs entirely in this page - no network calls.
+// ---------------------------------------------------------------------------
+
+const WEIGHTS = {
+  peak: 0.25,
+  stat: 0.20,
+  champ: 0.20,
+  hardware: 0.15,
+  longevity: 0.10,
+  impact: 0.10,
+};
+
+const LABELS = {
+  peak: "Peak Dominance",
+  stat: "Statistical Production",
+  champ: "Championships & Team Success",
+  hardware: "Individual Hardware",
+  longevity: "Longevity",
+  impact: "Historical Impact",
+};
+
+const SPORTS = {
+  basketball: { name: "Basketball (NBA)", players: [
+    ["Michael Jordan", 99, 90, 95, 98, 80, 100, "6-0 in NBA Finals, 6 Finals MVPs, 5 MVPs, 10 scoring titles, never lost a Finals series."],
+    ["LeBron James", 96, 98, 85, 92, 99, 95, "All-time leading scorer, 4 titles with 3 different franchises, 4 MVPs, still elite 21+ seasons in."],
+    ["Kareem Abdul-Jabbar", 90, 93, 88, 90, 95, 85, "6 MVPs (record), 6 titles, NBA's career scoring leader for nearly 40 years, 20 elite seasons."],
+    ["Bill Russell", 92, 65, 100, 80, 78, 90, "11 championships in 13 seasons - the greatest winning record of any team-sport athlete ever."],
+    ["Magic Johnson", 93, 80, 90, 82, 65, 88, "5 titles, 3 MVPs, redefined the point guard position; prime cut short by HIV diagnosis."],
+    ["Larry Bird", 92, 82, 85, 82, 68, 85, "3 titles, 3 straight MVPs, one of the greatest shooters and clutch performers ever; back injuries shortened career."],
+    ["Wilt Chamberlain", 97, 99, 70, 78, 85, 80, "100-point game, averaged 50.4 ppg for a season - statistical records still considered unbreakable."],
+    ["Tim Duncan", 88, 85, 92, 78, 92, 75, "5 titles, 3 Finals MVPs, 2 MVPs, remarkably consistent excellence across 19 seasons."],
+    ["Shaquille O'Neal", 94, 88, 82, 75, 78, 82, "4 titles including a 3-peat with 3 straight Finals MVPs; most physically dominant force in league history."],
+    ["Kobe Bryant", 90, 87, 85, 72, 85, 90, "5 titles, 2 Finals MVPs, 81-point game, obsessive work ethic became its own cultural phenomenon."],
+    ["Stephen Curry", 89, 78, 78, 75, 80, 96, "Only unanimous MVP ever, 4 titles, single-handedly changed how the game is played by revolutionizing 3-point shooting."],
+    ["Hakeem Olajuwon", 87, 80, 75, 65, 82, 70, "Back-to-back titles and Finals MVPs in 1994-95, widely regarded as the most skilled big man ever."],
+  ]},
+  soccer: { name: "Soccer / Football (World)", players: [
+    ["Lionel Messi", 97, 98, 90, 99, 92, 96, "Record 8 Ballon d'Or wins, 2022 World Cup title, all-time goal/assist production at the highest level for 20 years."],
+    ["Cristiano Ronaldo", 96, 97, 82, 96, 95, 95, "5 Champions League titles, 5 Ballon d'Ors, all-time leading scorer in men's international football."],
+    ["Pele", 95, 90, 98, 85, 80, 98, "Only player to win 3 World Cups (1958, 1962, 1970); global ambassador who globalized the sport."],
+    ["Diego Maradona", 98, 78, 85, 80, 60, 92, "Carried Argentina to the 1986 World Cup almost single-handedly - considered the greatest individual tournament performance ever."],
+    ["Johan Cruyff", 93, 75, 75, 80, 70, 95, "Pioneer of Total Football; 3 Ballon d'Ors; philosophy still shapes how the modern game is coached and played."],
+    ["Franz Beckenbauer", 88, 65, 90, 78, 75, 85, "Reinvented the sweeper/libero role; won the World Cup as both captain (1974) and head coach (1990)."],
+    ["Zinedine Zidane", 92, 72, 88, 82, 68, 88, "1998 World Cup and Euro 2000 winner with France; among the most technically gifted midfielders ever."],
+    ["Ronaldo Nazario", 96, 85, 82, 85, 55, 85, "Two World Cup titles (1994, 2002) and 3 FIFA World Player of the Year awards despite injuries cutting his prime short."],
+    ["Alfredo Di Stefano", 90, 82, 92, 78, 78, 80, "Led Real Madrid to 5 consecutive European Cups (1956-60), a feat no player has matched since."],
+    ["Michel Platini", 87, 78, 78, 85, 65, 75, "3 consecutive Ballon d'Ors (1983-85); dominant Euro 1984 with 9 goals in 5 games."],
+    ["Ronaldinho", 90, 75, 78, 78, 55, 88, "2002 World Cup and 2006 Champions League winner; his flair changed how a generation of players approached the game."],
+    ["Eusebio", 85, 80, 60, 75, 65, 70, "1965 Ballon d'Or; led Portugal to 3rd place at the 1966 World Cup as tournament top scorer."],
+  ]},
+  american_football: { name: "American Football (NFL)", players: [
+    ["Tom Brady", 92, 90, 99, 90, 97, 92, "7 Super Bowl titles (most ever), 5 Super Bowl MVPs, 3 NFL MVPs, elite production across 23 seasons."],
+    ["Jerry Rice", 95, 99, 85, 80, 93, 88, "All-time leading receiver by a massive margin; records that may never be broken."],
+    ["Jim Brown", 98, 90, 70, 82, 55, 85, "Retired at his statistical peak after 9 seasons; still widely cited as the most dominant runner ever relative to his era."],
+    ["Lawrence Taylor", 97, 80, 75, 85, 70, 90, "Redefined the outside linebacker position and how defenses attack the quarterback; 1986 NFL MVP."],
+    ["Joe Montana", 93, 78, 92, 85, 75, 82, "4-0 in Super Bowls with 3 Super Bowl MVPs; defined clutch quarterback play for a generation."],
+    ["Peyton Manning", 88, 92, 78, 92, 85, 80, "Record 5 NFL MVPs, multiple career passing records, 2 Super Bowl titles with 2 different franchises."],
+    ["Walter Payton", 90, 88, 68, 75, 85, 78, "Elite two-way back for 13 seasons, ironman durability, one of the most complete players in league history."],
+    ["Reggie White", 92, 85, 70, 72, 78, 75, "Career sack totals among the very best ever; feared as both a pass rusher and run defender."],
+    ["Barry Sanders", 96, 85, 40, 78, 65, 82, "Retired at the peak of his powers; widely regarded as the most elusive runner in NFL history."],
+    ["Deion Sanders", 90, 75, 75, 65, 70, 80, "Shut down entire sides of the field as a corner while also being an elite kick/punt returner; 2 Super Bowls."],
+    ["Aaron Donald", 93, 80, 68, 78, 60, 70, "3-time Defensive Player of the Year, arguably the most dominant interior defensive lineman ever."],
+    ["Randy Moss", 92, 85, 55, 65, 75, 80, "Redefined the deep-threat receiver; single-season touchdown record (23) still stands."],
+  ]},
+  baseball: { name: "Baseball (MLB)", players: [
+    ["Babe Ruth", 99, 96, 90, 85, 85, 100, "Redefined the sport around power hitting; 7 World Series titles; still the sport's most iconic figure."],
+    ["Willie Mays", 95, 93, 60, 82, 90, 90, "Five-tool excellence for two decades; 2-time MVP, 12 Gold Gloves, 'The Catch' in the 1954 World Series."],
+    ["Barry Bonds", 98, 97, 30, 95, 92, 75, "Record 7 MVPs and single-season/career home run records, though tempered by steroid-era controversy."],
+    ["Hank Aaron", 88, 94, 65, 78, 95, 85, "Held the career home run record for 33 years; also holds the all-time RBI record."],
+    ["Ted Williams", 97, 92, 20, 75, 70, 82, "Last player to hit .400 in a season (1941); missed ~5 prime seasons serving in the military."],
+    ["Ty Cobb", 92, 90, 40, 70, 88, 78, "Career .366 batting average, the highest in MLB history, over a 24-season career."],
+    ["Walter Johnson", 90, 88, 55, 72, 85, 75, "417 career wins (2nd all-time) and a career that set the template for dominant pitching."],
+    ["Lou Gehrig", 90, 85, 88, 75, 55, 80, "6 World Series titles and a .340 career average before ALS ended his career and life prematurely."],
+    ["Mickey Mantle", 92, 85, 92, 80, 65, 82, "7 World Series titles, 3 MVPs, a Triple Crown season (1956); injuries limited a historic peak."],
+    ["Stan Musial", 85, 87, 70, 78, 90, 70, "3 MVPs and remarkable consistency across 22 seasons, almost entirely with one franchise."],
+    ["Honus Wagner", 84, 82, 55, 65, 82, 65, "8 batting titles in the dead-ball era; regarded as the best shortstop of the pre-modern game."],
+    ["Rickey Henderson", 86, 88, 60, 70, 92, 78, "All-time stolen base and runs scored leader by wide margins; played at a high level into his 40s."],
+  ]},
+  hockey: { name: "Ice Hockey (NHL)", players: [
+    ["Wayne Gretzky", 100, 100, 90, 98, 90, 100, "Holds 60+ NHL records; his career assist total alone exceeds the career point total of every other player."],
+    ["Gordie Howe", 88, 90, 78, 80, 97, 85, "Played at an elite level into his 50s; 6 Hart Trophies and 4 Stanley Cups."],
+    ["Bobby Orr", 96, 80, 62, 82, 45, 90, "Reinvented the defenseman position as a scoring threat; career cut short at 30 by knee injuries."],
+    ["Mario Lemieux", 97, 90, 70, 82, 50, 85, "Arguably Gretzky's only rival at peak dominance; overcame cancer to keep playing at an elite level."],
+    ["Maurice Richard", 85, 75, 88, 60, 75, 82, "First player to score 50 goals in 50 games; 8 Stanley Cup titles with the Canadiens."],
+    ["Bobby Hull", 85, 82, 55, 68, 82, 78, "Popularized the slap shot and drew fans to the game with his speed and scoring power."],
+    ["Mark Messier", 82, 78, 92, 65, 88, 78, "Only player to captain two different franchises to Stanley Cup titles; 6 Cups overall."],
+    ["Patrick Roy", 88, 70, 90, 68, 85, 82, "4 Stanley Cups and 3 Conn Smythe Trophies; revolutionized the butterfly goaltending style."],
+    ["Sidney Crosby", 88, 82, 88, 75, 82, 80, "3 Stanley Cups, 2 Conn Smythe Trophies, 2 MVPs; face of the league for nearly two decades."],
+    ["Alexander Ovechkin", 90, 92, 55, 78, 88, 82, "Broke the all-time goal-scoring record; 3-time MVP and generational goal scorer."],
+    ["Jean Beliveau", 78, 72, 96, 60, 80, 70, "10 Stanley Cup titles as a player - the most of anyone on this list."],
+    ["Nicklas Lidstrom", 78, 65, 78, 70, 85, 65, "7 Norris Trophies as the league's best defenseman and 4 Stanley Cups without ever missing the playoffs."],
+  ]},
+  tennis_men: { name: "Tennis - Men's", players: [
+    ["Novak Djokovic", 96, 99, 98, 96, 95, 92, "Most men's Grand Slam titles ever (24), record weeks at world No. 1, winning record against every rival."],
+    ["Roger Federer", 93, 90, 90, 92, 90, 98, "20 Grand Slam titles, 237 consecutive weeks at No. 1, credited with growing tennis's global popularity."],
+    ["Rafael Nadal", 97, 91, 92, 90, 82, 90, "22 Grand Slam titles including a record 14 French Opens; unmatched peak intensity on clay."],
+    ["Rod Laver", 95, 75, 85, 70, 70, 80, "Only man with two calendar-year Grand Slams (1962, 1969), spanning both the amateur and Open eras."],
+    ["Pete Sampras", 88, 78, 80, 78, 72, 78, "Held the men's Grand Slam record (14) for years; 6 year-end world No. 1 finishes."],
+    ["Bjorn Borg", 92, 65, 78, 68, 45, 80, "Extraordinary win rate and 11 Grand Slam titles before retiring at just 26."],
+    ["Andre Agassi", 82, 68, 68, 65, 75, 78, "Career Grand Slam winner (all 4 majors) known for popularizing a more athletic, baseline style."],
+    ["John McEnroe", 85, 60, 65, 65, 55, 75, "7 Grand Slam singles titles and dominant doubles career; one of the most compelling personalities in the sport."],
+    ["Ivan Lendl", 82, 68, 65, 65, 78, 65, "8 Grand Slam titles and a record 270 weeks at world No. 1 across his career."],
+    ["Jimmy Connors", 80, 65, 60, 62, 85, 70, "Most ATP tour-level titles ever (109) and 8 Grand Slam singles titles across three different decades."],
+  ]},
+  tennis_women: { name: "Tennis - Women's", players: [
+    ["Serena Williams", 97, 92, 92, 90, 92, 98, "23 Grand Slam singles titles in the Open Era (most ever); redefined power and athleticism in the women's game."],
+    ["Steffi Graf", 96, 88, 90, 85, 78, 85, "Only player (man or woman) to complete a Golden Slam (all 4 majors + Olympic gold in one year, 1988)."],
+    ["Margaret Court", 85, 90, 82, 70, 80, 65, "Holds the all-time record of 24 Grand Slam singles titles, though many came in the amateur era."],
+    ["Martina Navratilova", 92, 85, 82, 80, 92, 88, "18 singles majors plus a record haul of doubles majors; remained a top competitor into her 40s."],
+    ["Chris Evert", 87, 80, 78, 72, 82, 78, "18 Grand Slam titles and one of the best match-win percentages in the sport's history."],
+    ["Billie Jean King", 80, 65, 65, 65, 70, 95, "12 Grand Slam singles titles, but her larger legacy is the 'Battle of the Sexes' and fight for equality in sport."],
+    ["Monica Seles", 93, 60, 65, 65, 40, 75, "Dominant, era-defining prime cut short by an on-court stabbing attack in 1993."],
+    ["Suzanne Lenglen", 88, 60, 60, 55, 50, 80, "Pre-Open-era pioneer who drew unprecedented crowds and legitimized women's tennis as a spectator sport."],
+    ["Venus Williams", 82, 70, 68, 68, 85, 82, "7 Grand Slam singles titles and a driving force behind equal prize money for women at majors."],
+    ["Martina Hingis", 78, 62, 60, 60, 65, 68, "Youngest world No. 1 in history; 5 Grand Slam singles titles built on elite court IQ."],
+  ]},
+  boxing: { name: "Boxing", players: [
+    ["Muhammad Ali", 95, 80, 92, 85, 80, 100, "3-time heavyweight champion; global cultural icon whose impact transcended the sport entirely."],
+    ["Sugar Ray Robinson", 96, 88, 85, 80, 85, 88, "173-19-6 record; the pound-for-pound standard by which all other fighters are still measured."],
+    ["Floyd Mayweather Jr.", 90, 95, 88, 85, 88, 80, "Retired 50-0; multi-division world champion known for defensive mastery and ring IQ."],
+    ["Mike Tyson", 97, 70, 75, 72, 50, 90, "Youngest heavyweight champion ever; one of the most feared punchers in boxing history at his peak."],
+    ["Joe Louis", 90, 82, 88, 75, 78, 82, "Held the heavyweight title for a record 25 title defenses over nearly 12 years."],
+    ["Rocky Marciano", 85, 90, 78, 68, 55, 70, "Only heavyweight champion to retire completely undefeated, at 49-0."],
+    ["Roberto Duran", 88, 82, 75, 70, 85, 75, "104 career wins and world titles across four different weight divisions."],
+    ["Manny Pacquiao", 90, 85, 82, 78, 85, 85, "Only boxer to win world titles in eight different weight divisions."],
+    ["Julio Cesar Chavez", 85, 88, 78, 68, 82, 72, "Started his career 89-0-1; 107 career wins and a Mexican boxing icon."],
+    ["Henry Armstrong", 88, 78, 82, 65, 70, 75, "The only boxer to simultaneously hold world titles in three different weight classes at once."],
+  ]},
+  golf: { name: "Golf", players: [
+    ["Tiger Woods", 99, 92, 90, 95, 85, 100, "15 major titles, 82 PGA Tour wins (tied for most ever); the 'Tiger Slam' remains unmatched dominance."],
+    ["Jack Nicklaus", 93, 88, 98, 85, 92, 90, "Record 18 major championships plus a record 19 runner-up finishes across a 25-year prime."],
+    ["Ben Hogan", 92, 78, 78, 75, 60, 78, "Won the Triple Crown of golf in 1953 after nearly dying in a car accident two years earlier."],
+    ["Sam Snead", 80, 90, 65, 70, 90, 72, "82 PGA Tour wins (tied for most ever) across a remarkably long competitive career."],
+    ["Arnold Palmer", 82, 78, 68, 72, 78, 92, "7 major titles, but his charisma and 'Arnie's Army' fanbase built modern golf's TV-era popularity."],
+    ["Bobby Jones", 88, 60, 82, 65, 40, 80, "Completed the original Grand Slam in 1930 as an amateur, then retired at 28 at the peak of his powers."],
+    ["Gary Player", 78, 70, 72, 68, 88, 78, "Completed the career Grand Slam; built one of the most traveled and enduring international careers in golf."],
+    ["Tom Watson", 80, 72, 68, 68, 80, 68, "8 major titles and a near-miss at the 2009 Open Championship at age 59."],
+    ["Walter Hagen", 82, 68, 78, 62, 75, 75, "11 major championships (2nd all-time) and a key figure in legitimizing professional golfers socially."],
+    ["Byron Nelson", 90, 65, 62, 65, 45, 65, "Won 11 consecutive PGA Tour events in 1945 - a record considered untouchable."],
+  ]},
+};
+
+function playerObj(arr) {
+  const [name, peak, stat, champ, hardware, longevity, impact, note] = arr;
+  const scores = { peak, stat, champ, hardware, longevity, impact };
+  const total = Object.keys(WEIGHTS).reduce((sum, k) => sum + WEIGHTS[k] * scores[k], 0);
+  return { name, scores, note, total };
+}
+
+function rankPlayers(sportKey) {
+  const players = SPORTS[sportKey].players.map(playerObj);
+  return players.sort((a, b) => b.total - a.total).slice(0, 10);
+}
+
+function equationText() {
+  return "GOAT Score = " + Object.keys(WEIGHTS)
+    .map(k => `${WEIGHTS[k].toFixed(2)} x ${LABELS[k]}`)
+    .join("\n           + ") + "\n(each component scored 0-100; final score out of 100)";
+}
+
+function renderResults(sportKey) {
+  const sport = SPORTS[sportKey];
+  const ranked = rankPlayers(sportKey);
+  const container = document.getElementById("results");
+  container.innerHTML = "";
+
+  ranked.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    let rowsHtml = "";
+    Object.keys(WEIGHTS).forEach(k => {
+      const raw = p.scores[k];
+      const weighted = (raw * WEIGHTS[k]).toFixed(2);
+      rowsHtml += `
+        <div class="row">
+          <div class="label">${LABELS[k]}</div>
+          <div class="track"><div class="fill" style="width:${raw}%"></div></div>
+          <div class="contrib">${raw}/100</div>
+        </div>
+        <div class="row" style="margin-top:-0.3rem;">
+          <div class="label"></div>
+          <div class="label">&times; ${WEIGHTS[k].toFixed(2)} weight</div>
+          <div class="contrib">= ${weighted}</div>
+        </div>`;
+    });
+
+    card.innerHTML = `
+      <div class="card-head">
+        <div><span class="rank">${i + 1}</span><span class="name">${p.name}</span></div>
+        <div class="score">${p.total.toFixed(2)} / 100</div>
+      </div>
+      ${rowsHtml}
+      <div class="note"><strong>Why:</strong> ${p.note}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function currentReportText() {
+  const sel = document.getElementById("sportSelect");
+  const sportKey = sel.value;
+  const sport = SPORTS[sportKey];
+  const ranked = rankPlayers(sportKey);
+  let lines = [];
+  lines.push("=".repeat(78));
+  lines.push(`GOAT CALCULATOR - Top 10: ${sport.name}`);
+  lines.push(`Generated: ${new Date().toISOString()}`);
+  lines.push("=".repeat(78));
+  lines.push("");
+  lines.push("EQUATION");
+  lines.push("-".repeat(78));
+  lines.push(equationText());
+  lines.push("");
+  ranked.forEach((p, i) => {
+    lines.push("-".repeat(78));
+    lines.push(`#${i + 1}  ${p.name}  -  GOAT Score: ${p.total.toFixed(2)} / 100`);
+    lines.push("-".repeat(78));
+    Object.keys(WEIGHTS).forEach(k => {
+      const raw = p.scores[k];
+      const weighted = (raw * WEIGHTS[k]).toFixed(2);
+      lines.push(`  ${LABELS[k].padEnd(32)} ${String(raw).padStart(3)}/100  x${WEIGHTS[k].toFixed(2)} = ${weighted}`);
+    });
+    lines.push(`  Why: ${p.note}`);
+    lines.push("");
+  });
+  lines.push("=".repeat(78));
+  lines.push("Methodology note: component ratings are anchored to real career");
+  lines.push("achievements but the 0-100 values and weights are an original,");
+  lines.push("editable formula, not an official statistic.");
+  lines.push("=".repeat(78));
+  return lines.join("\n");
+}
+
+function init() {
+  const select = document.getElementById("sportSelect");
+  Object.keys(SPORTS).forEach(key => {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = SPORTS[key].name;
+    select.appendChild(opt);
+  });
+  document.getElementById("equationText").textContent = equationText();
+
+  document.getElementById("calcBtn").addEventListener("click", () => {
+    renderResults(select.value);
+  });
+
+  document.getElementById("downloadBtn").addEventListener("click", () => {
+    const text = currentReportText();
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${select.value}_top10_goat.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  renderResults(select.value);
+}
+
+init();
+</script>
+</body>
+</html>
